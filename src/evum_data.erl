@@ -181,7 +181,7 @@ handle_info(Info, State) ->
 %%--------------------------------------------------------------------
 net(Socket) ->
     case procket:recvfrom(Socket, 65535) of
-        eagain ->
+        {error, eagain} ->
             timer:sleep(10),
             net(Socket);
         {ok, Buf} ->
@@ -195,7 +195,7 @@ net(Socket) ->
 
 unix(Socket) ->
     case procket:recvfrom(Socket, 65535, 0, 110) of
-        eagain ->
+        {error, eagain} ->
             timer:sleep(10),
             unix(Socket);
         {ok, Buf, Sun} ->

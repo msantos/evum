@@ -143,7 +143,7 @@ accept(Server, Listen) ->
 % };
 recv(Server, Socket) ->
     case procket:recvfrom(Socket, 16#FFFF) of
-        eagain ->
+        {error, eagain} ->
             timer:sleep(10),
             recv(Server, Socket);
         {ok, <<>>} ->

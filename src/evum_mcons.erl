@@ -128,8 +128,8 @@ read(Socket) ->
     read(Socket, 0).
 read(#socket{s = FD} = Socket, X) ->
     case procket:recvfrom(FD, 4+4+4+?MCONSOLE_MAX_DATA) of
-        eagain when X < 10 -> timer:sleep(10), read(Socket, X+1);
-        eagain -> eagain;
+        {error, eagain} when X < 10 -> timer:sleep(10), read(Socket, X+1);
+        {error, eagain} -> {error, eagain};
         {ok, _} = N -> N
     end.
 

@@ -1,5 +1,5 @@
 
-Spawn a Linux VM as an Erlang process in the beam VM.
+Spawn Linux VMs as Erlang processes in the Erlang VM.
 
 
 EXAMPLE
