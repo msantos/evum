@@ -32,6 +32,7 @@
 -behaviour(gen_server).
 
 -include("evum.hrl").
+-include_lib("kernel/include/inet.hrl").
 
 -define(SERVER, ?MODULE).
 -define(PROGNAME, "priv/linux").
@@ -65,6 +66,12 @@ ifconfig(Ref, {IP, Netmask, Default}) ->
     send(Ref, "ifconfig eth0 " ++ IP ++ " netmask " ++ Netmask),
     send(Ref, "route add default gw " ++ Default).
 
+ping(Ref, Hostname) when is_list(Hostname) ->
+    Addr = case inet_res:gethostbyname(Hostname) of
+        {ok, #hostent{h_addr_list = [IP|_IPs]}} -> IP;
+        _ -> throw(badarg)
+    end,
+    ping(Ref, Addr);
 ping(Ref, {A,B,C,D} = IP) when is_integer(A), is_integer(B), is_integer(C), is_integer(D) ->
     send(Ref, "ping -c 1 " ++ inet_parse:ntoa(IP)).
 
