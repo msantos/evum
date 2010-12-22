@@ -34,7 +34,7 @@
 -export([
         open/0, open/1, close/1,
         help/1,
-        send/2, send/3,
+        send/2,
         cmd/1, response/1,
         write/2, read/1
     ]).
@@ -96,11 +96,9 @@ help(Socket) ->
 % go - continue the UML after a 'stop' 
 % log <string> - make UML enter <string> into the kernel log
 % proc <file> - returns the contents of the UML's /proc/<file>
-send(Socket, Command) ->
-    send(Socket, Command, []).
-send(Socket, Command, []) when is_list(Command) ->
-    send(Socket, list_to_binary(Command), []);
-send(#socket{} = Socket, Command, []) when is_binary(Command) ->
+send(Socket, Command) when is_list(Command) ->
+    send(Socket, list_to_binary(Command));
+send(#socket{} = Socket, Command) when is_binary(Command) ->
     ok = write(Socket, cmd(Command)),
     recv(Socket).
 
