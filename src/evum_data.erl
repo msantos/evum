@@ -31,7 +31,7 @@
 -module(evum_data).
 -behaviour(gen_server).
 
--include("epcap_net.hrl").
+-include("pkt.hrl").
 -include("procket.hrl").
 -include("evum.hrl").
 
@@ -130,7 +130,7 @@ handle_call(name, _From, #state{sun = Sun} = State) ->
     {reply, Sun, State};
 
 handle_call({net, Data}, _From, #state{s = Socket, mac = MAC} = State) ->
-    {#ether{dhost = Dhost, type = Type}, _Packet} = epcap_net:ether(Data),
+    {#ether{dhost = Dhost, type = Type}, _Packet} = pkt:ether(Data),
     % pretend we're switched
     case gb_trees:lookup(Dhost, MAC) of
         none when Type == ?ETH_P_ARP ->
@@ -147,7 +147,7 @@ handle_call({net, Data}, _From, #state{s = Socket, mac = MAC} = State) ->
     {reply, ok, State};
 
 handle_call({unix, Sun, Data}, _From, #state{ip = IP, arp = ARP, ifindex = Ifindex, mac = MAC} = State) ->
-    {#ether{shost = Ether, type = Type}, _Packet} = epcap_net:ether(Data),
+    {#ether{shost = Ether, type = Type}, _Packet} = pkt:ether(Data),
     Socket = case Type of
         ?ETH_P_ARP -> ARP;
         ?ETH_P_IP -> IP
