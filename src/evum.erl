@@ -46,7 +46,6 @@
             terminate/2, code_change/3]).
 
 -record(state, {
-    uml_dir = ?UML_DIR,
     cons,
     pid,
     port
@@ -123,12 +122,7 @@ start_link(Pid, Options) ->
 
 init([Pid, Options]) ->
     process_flag(trap_exit, true),
-    Default = #state{},
     UmlId = umid(Pid),
-
-    % Start network
-    {ok, Switch} = evum_data:start(),
-    {ok,_} = evum_ctl:start(Switch),
 
     Args = case proplists:get_value(net, Options, false) of
         false -> Options;
@@ -140,7 +134,7 @@ init([Pid, Options]) ->
     end,
     Cmd = make_args([
             {umid, UmlId},
-            {uml_dir, Default#state.uml_dir}
+            {uml_dir, ?UML_DIR}
         ] ++ Args),
     Port = open_port({spawn, Cmd}, [
             {line, 2048},
@@ -148,8 +142,7 @@ init([Pid, Options]) ->
             stderr_to_stdout,
             exit_status
         ]),
-    {ok, Cons} = evum_mcons:open(Default#state.uml_dir ++ "/" ++
-        UmlId ++ "/mconsole"),
+    {ok, Cons} = evum_mcons:open(?UML_DIR ++ "/" ++ UmlId ++ "/mconsole"),
     {ok, #state{
             cons = Cons,
             pid = Pid,

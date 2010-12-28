@@ -60,10 +60,13 @@ open(Path) when is_list(Path) ->
 open(Path) when is_binary(Path), byte_size(Path) < ?UNIX_PATH_MAX ->
     {ok, Socket} = procket:socket(?PF_LOCAL, ?SOCK_DGRAM, 0),
     Pid = list_to_binary(string:right(os:getpid(), 5)),
+    {_,_,USec} = erlang:now(),
     Sun = <<?PF_LOCAL:16/native,        % sun_family
             0:8,                        % abstract address
             Pid/binary,                 % address
-            0:((?UNIX_PATH_MAX-(1+byte_size(Pid)))*8)
+            USec:32,                    % timestamp: to allow
+                                        %  multiple connects from 1 VM
+            0:((?UNIX_PATH_MAX-(1+byte_size(Pid)+4))*8)
             >>,
     ok = procket:bind(Socket, Sun),
     {ok, #socket{
