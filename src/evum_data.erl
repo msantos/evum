@@ -104,7 +104,7 @@ init([Pid]) ->
     Ifindex = packet:ifindex(IP, If),
 
     State = #state{
-            mac = gb_trees:empty(),
+            mac = dict:new(),
             ip = IP,
             arp = ARP,
             ifindex = Ifindex,
@@ -130,22 +130,22 @@ init([Pid]) ->
 handle_call(name, _From, #state{sun = Sun} = State) ->
     {reply, Sun, State};
 
+%% Pretend we're hubbed
+%% 
+%% Linux doesn't seem to allow sending fake ARP addresses. The ARP packets
+%% can be seen by sniffing the interface but aren't propagated to
+%% the network. There may be some settings to influence this behaviour,
+%% e.g., /proc/sys/net/ipv4/conf/all/arp_filter = 1
+%%
+%% For now, use the host MAC address and send the replies to all running
+%% VM's. If the VM is not responding, remove it from the list of VM
+%% addresses.
 handle_call({net, Data}, _From, #state{s = Socket, mac = MAC} = State) ->
-    {#ether{dhost = Dhost, type = Type}, _Packet} = pkt:ether(Data),
-    % pretend we're switched
-    case gb_trees:lookup(Dhost, MAC) of
-        none when Type == ?ETH_P_ARP ->
-            [ ok = procket:sendto(Socket, Data, 0, Sun) || {_,Sun} <- gb_trees:to_list(MAC) ];
-        none when Dhost == <<255,255,255,255>> ->
-            [ ok = procket:sendto(Socket, Data, 0, Sun) || {_,Sun} <- gb_trees:to_list(MAC) ];
-        none ->
-            ok;
-        {value, Sun} ->
-            procket:sendto(Socket, Data, 0, Sun)
-    end,
-    % pretend we're hubbed
-%    [ ok = procket:sendto(Socket, Data, 0, Sun) || {_,Sun} <- gb_trees:to_list(MAC) ],
-    {reply, ok, State};
+    Alive = dict:filter(
+        fun(_Ether,Sun) -> ok == procket:sendto(Socket, Data, 0, Sun) end,
+        MAC
+    ),
+    {reply, ok, State#state{mac = Alive}};
 
 handle_call({unix, Sun, Data}, _From, #state{ip = IP, arp = ARP, ifindex = Ifindex, mac = MAC} = State) ->
     {#ether{shost = Ether, type = Type}, _Packet} = pkt:ether(Data),
@@ -154,7 +154,7 @@ handle_call({unix, Sun, Data}, _From, #state{ip = IP, arp = ARP, ifindex = Ifind
         ?ETH_P_IP -> IP
     end,
     ok = packet:send(Socket, Ifindex, Data),
-    {reply, ok, State#state{mac = gb_trees:enter(Ether, Sun, MAC)}};
+    {reply, ok, State#state{mac = dict:store(Ether, Sun, MAC)}};
 
 handle_call(stop, {Pid,_}, #state{pid = Pid} = State) ->
     {stop, shutdown, ok, State}.
