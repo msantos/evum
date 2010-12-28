@@ -127,8 +127,8 @@ init([Pid, Options]) ->
     UmlId = umid(Pid),
 
     % Start network
-    {ok,_} = evum_data:start(),
-    {ok,_} = evum_ctl:start(),
+    {ok, Switch} = evum_data:start(),
+    {ok,_} = evum_ctl:start(Switch),
 
     Args = case proplists:get_value(net, Options, false) of
         false -> Options;

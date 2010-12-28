@@ -34,9 +34,9 @@
 -include("procket.hrl").
 -include("evum.hrl").
 
--export([start/0, start/1, stop/1]).
+-export([start/1, start/2, stop/1]).
 -export([data/3]).
--export([start_link/1]).
+-export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
             terminate/2, code_change/3]).
 
@@ -49,16 +49,17 @@
 -record(state, {
     uml_dir = ?UML_DIR,
     pid,
+    switch,
     path,
     sun,
     s
 }).
 
 
-start() ->
-    start_link(self() ).
-start(Pid) when is_pid(Pid) ->
-    start_link(Pid).
+start(Switch) ->
+    start_link(self(), Switch).
+start(Pid, Switch) ->
+    start_link(Pid, Switch).
 
 stop(Ref) ->
     gen_server:call(Ref, stop).
@@ -66,10 +67,10 @@ stop(Ref) ->
 data(Ref, Socket, Data) ->
     gen_server:call(Ref, {data, Socket, Data}).
 
-start_link(Pid) ->
-    gen_server:start_link(?MODULE, [Pid], []).
+start_link(Pid, Switch) when is_pid(Pid), is_pid(Switch) ->
+    gen_server:start_link(?MODULE, [Pid, Switch], []).
 
-init([Pid]) ->
+init([Pid, Switch]) ->
     process_flag(trap_exit, true),
     Path = ?UML_DIR ++ "/evum.ctl",
 
@@ -86,13 +87,14 @@ init([Pid]) ->
     ok = procket:listen(Socket, 5),
 
     Server = self(),
-    spawn_link(fun() -> accept(Server, Socket) end),
+    spawn_link(fun() -> accept(Server, Switch, Socket) end),
 
     {ok, #state{
         path = Path,
         s = Socket,
         sun = Sun,
-        pid = Pid
+        pid = Pid,
+        switch = Switch
         }}.
 
 
@@ -126,14 +128,14 @@ handle_info(Info, State) ->
 %%--------------------------------------------------------------------
 
 % XXX this will leak the listener and accepted fd's
-accept(Server, Listen) ->
+accept(Server, Switch, Listen) ->
     case procket:accept(Listen) of
         {error, eagain} ->
             timer:sleep(1000);
         {ok, Socket} ->
-            spawn(fun() -> recv(Server, Socket) end)
+            spawn(fun() -> recv(Server, Switch, Socket) end)
     end,
-    accept(Server, Listen).
+    accept(Server, Switch, Listen).
 
 % struct request_v3 {
 %     uint32_t magic;
@@ -141,20 +143,20 @@ accept(Server, Listen) ->
 %     enum request_type type;
 %     struct sockaddr_un sock;
 % };
-recv(Server, Socket) ->
+recv(Server, Switch, Socket) ->
     case procket:recvfrom(Socket, 16#FFFF) of
         {error, eagain} ->
             timer:sleep(10),
-            recv(Server, Socket);
+            recv(Server, Switch, Socket);
         {ok, <<>>} ->
             procket:close(Socket);
         {ok, <<?SWITCH_MAGIC:32/native, ?UML_VERSION:32/native, ?REQ_NEW_CONTROL:32/native, Sun/binary>>} ->
             error_logger:info_report([{connect_from, Sun}]),
-            Data = evum_data:name(),
-            case procket:sendto(Socket, Data, 0, <<>>) of
+            Name = evum_data:name(Switch),
+            case procket:sendto(Socket, Name, 0, <<>>) of
                 ok ->
 %                    data(Server, Socket, Buf),
-                    recv(Server, Socket);
+                    recv(Server, Switch, Socket);
                 _ ->
                     procket:close(Socket)
             end;

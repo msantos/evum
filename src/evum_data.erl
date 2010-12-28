@@ -36,12 +36,11 @@
 -include("evum.hrl").
 
 -export([start/0, start/1, stop/1]).
--export([name/0,data/2]).
+-export([name/1,data/2]).
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
         terminate/2, code_change/3]).
 
--define(SERVER, ?MODULE).
 -define(ETH_ALEN, 6).
 
 -record(state, {
@@ -64,16 +63,16 @@ start(Pid) when is_pid(Pid) ->
 stop(Ref) ->
     gen_server:call(Ref, stop).
 
-name() ->
-    gen_server:call(?SERVER, name).
+name(Ref) ->
+    gen_server:call(Ref, name).
 
-data(net, Data) ->
-    gen_server:call(?SERVER, {net, Data});
-data(unix, {Sun, Data}) ->
-    gen_server:call(?SERVER, {unix, Sun, Data}).
+data(Ref, {net, Data}) ->
+    gen_server:call(Ref, {net, Data});
+data(Ref, {unix, {Sun, Data}}) ->
+    gen_server:call(Ref, {unix, Sun, Data}).
 
 start_link(Pid) ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [Pid], []).
+    gen_server:start_link(?MODULE, [Pid], []).
 
 init([Pid]) ->
     process_flag(trap_exit, true),
@@ -114,14 +113,16 @@ init([Pid]) ->
             pid = Pid
         },
 
+    Self = self(),
+
     % Monitor the network for IP events
-    spawn_link(fun() -> net(IP) end),
+    spawn_link(fun() -> net(Self, IP) end),
 
     % Monitor the network for ARP events
-    spawn_link(fun() -> net(ARP) end),
+    spawn_link(fun() -> net(Self, ARP) end),
 
     % Monitor the Unix socket for events
-    spawn_link(fun() -> unix(Socket) end),
+    spawn_link(fun() -> unix(Self, Socket) end),
 
     {ok, State}.
 
@@ -179,28 +180,28 @@ handle_info(Info, State) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-net(Socket) ->
+net(Server, Socket) ->
     case procket:recvfrom(Socket, 65535) of
         {error, eagain} ->
             timer:sleep(10),
-            net(Socket);
+            net(Server, Socket);
         {ok, Buf} ->
-            data(net, Buf),
-            net(Socket);
+            data(Server, {net, Buf}),
+            net(Server, Socket);
         Error ->
             error_logger:error_report(Error),
             procket:close(Socket)
     end.
 
 
-unix(Socket) ->
+unix(Server, Socket) ->
     case procket:recvfrom(Socket, 65535, 0, 110) of
         {error, eagain} ->
             timer:sleep(10),
-            unix(Socket);
+            unix(Server, Socket);
         {ok, Buf, Sun} ->
-            data(unix, {Sun, Buf}),
-            unix(Socket);
+            data(Server, {unix, {Sun, Buf}}),
+            unix(Server, Socket);
         Error ->
             error_logger:error_report(Error),
             procket:close(Socket)
