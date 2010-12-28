@@ -44,8 +44,8 @@ Shell got <<"1 packets transmitted, 1 received, 0% packet loss, time 0ms">>
 Shell got <<"rtt min/avg/max/mdev = 53.918/53.918/53.918/0.000 ms">>
 
 % start up a shell (of sorts) on a port
-10> evum:send(R, "socat tcp-l:7777,reuseaddr,fork system:'/bin/bash',stderr").
-<<"root@(none):/# socat tcp-l:7777,reuseaddr,fork system:'/bin/bash',stderr">>
+10> evum:send(R, "socat tcp-l:7777,reuseaddr,fork system:'/bin/bash',stderr &").
+<<"root@(none):/# socat tcp-l:7777,reuseaddr,fork system:'/bin/bash',stderr &">>
 
 From another host:
 
