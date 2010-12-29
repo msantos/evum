@@ -72,7 +72,7 @@ ping(Ref, Hostname) when is_list(Hostname) ->
     end,
     ping(Ref, Addr);
 ping(Ref, {A,B,C,D} = IP) when is_integer(A), is_integer(B), is_integer(C), is_integer(D) ->
-    send(Ref, "ping -c 1 " ++ inet_parse:ntoa(IP)).
+    send(Ref, "ping -w 5 -c 1 " ++ inet_parse:ntoa(IP)).
 
 sniff(Ref) ->
     send(Ref, "tcpdump -s 0 -w /tmp/sniff.out -i eth0 > /dev/null 2>&1 &").
