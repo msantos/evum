@@ -44,7 +44,7 @@
 -define(ETH_ALEN, 6).
 
 -record(state, {
-        mac,
+        addr,
         ip,
         arp,
         ifindex,
@@ -103,7 +103,7 @@ init([Pid]) ->
     Ifindex = packet:ifindex(IP, If),
 
     State = #state{
-            mac = ordsets:new(),
+            addr = ordsets:new(),
             ip = IP,
             arp = ARP,
             ifindex = Ifindex,
@@ -139,21 +139,21 @@ handle_call(name, _From, #state{sun = Sun} = State) ->
 %% For now, use the host MAC address and send the replies to all running
 %% VM's. If the VM is not responding, remove it from the list of VM
 %% addresses.
-handle_call({net, Data}, _From, #state{s = Socket, mac = MAC} = State) ->
-    MAC1 = ordsets:filter(
+handle_call({net, Data}, _From, #state{s = Socket, addr = Addr} = State) ->
+    Addr1 = ordsets:filter(
         fun(Sun) -> ok == procket:sendto(Socket, Data, 0, Sun) end,
-        MAC
+        Addr
     ),
-    {reply, ok, State#state{mac = MAC1}};
+    {reply, ok, State#state{addr = Addr1}};
 
-handle_call({unix, Sun, Data}, _From, #state{ip = IP, arp = ARP, ifindex = Ifindex, mac = MAC} = State) ->
+handle_call({unix, Sun, Data}, _From, #state{ip = IP, arp = ARP, ifindex = Ifindex, addr = Addr} = State) ->
     {#ether{type = Type}, _Packet} = pkt:ether(Data),
     Socket = case Type of
         ?ETH_P_ARP -> ARP;
         ?ETH_P_IP -> IP
     end,
     ok = packet:send(Socket, Ifindex, Data),
-    {reply, ok, State#state{mac = ordsets:add_element(Sun, MAC)}};
+    {reply, ok, State#state{addr = ordsets:add_element(Sun, Addr)}};
 
 handle_call(stop, {Pid,_}, #state{pid = Pid} = State) ->
     {stop, shutdown, ok, State}.
