@@ -146,13 +146,21 @@ handle_call({net, Data}, _From, #state{s = Socket, addr = Addr} = State) ->
     ),
     {reply, ok, State#state{addr = Addr1}};
 
-handle_call({unix, Sun, Data}, _From, #state{ip = IP, arp = ARP, ifindex = Ifindex, addr = Addr} = State) ->
+handle_call({unix, Sun, Data}, _From, #state{
+        s = Unix,
+        ip = IP,
+        arp = ARP,
+        ifindex = Ifindex,
+        addr = Addr
+    } = State) ->
     {#ether{type = Type}, _Packet} = pkt:ether(Data),
     Socket = case Type of
         ?ETH_P_ARP -> ARP;
         ?ETH_P_IP -> IP
     end,
     ok = packet:send(Socket, Ifindex, Data),
+    % Broadcast the packets to all VM's, including the sender
+    [ procket:sendto(Unix, Data, 0, Un) || Un <- ordsets:to_list(Addr) ],
     {reply, ok, State#state{addr = ordsets:add_element(Sun, Addr)}};
 
 handle_call(stop, {Pid,_}, #state{pid = Pid} = State) ->
