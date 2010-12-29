@@ -104,7 +104,7 @@ init([Pid]) ->
     Ifindex = packet:ifindex(IP, If),
 
     State = #state{
-            mac = dict:new(),
+            mac = ordsets:new(),
             ip = IP,
             arp = ARP,
             ifindex = Ifindex,
@@ -141,20 +141,20 @@ handle_call(name, _From, #state{sun = Sun} = State) ->
 %% VM's. If the VM is not responding, remove it from the list of VM
 %% addresses.
 handle_call({net, Data}, _From, #state{s = Socket, mac = MAC} = State) ->
-    Alive = dict:filter(
-        fun(_Ether,Sun) -> ok == procket:sendto(Socket, Data, 0, Sun) end,
+    MAC1 = ordsets:filter(
+        fun(Sun) -> ok == procket:sendto(Socket, Data, 0, Sun) end,
         MAC
     ),
-    {reply, ok, State#state{mac = Alive}};
+    {reply, ok, State#state{mac = MAC1}};
 
 handle_call({unix, Sun, Data}, _From, #state{ip = IP, arp = ARP, ifindex = Ifindex, mac = MAC} = State) ->
-    {#ether{shost = Ether, type = Type}, _Packet} = pkt:ether(Data),
+    {#ether{type = Type}, _Packet} = pkt:ether(Data),
     Socket = case Type of
         ?ETH_P_ARP -> ARP;
         ?ETH_P_IP -> IP
     end,
     ok = packet:send(Socket, Ifindex, Data),
-    {reply, ok, State#state{mac = dict:store(Ether, Sun, MAC)}};
+    {reply, ok, State#state{mac = ordsets:add_element(Sun, MAC)}};
 
 handle_call(stop, {Pid,_}, #state{pid = Pid} = State) ->
     {stop, shutdown, ok, State}.
