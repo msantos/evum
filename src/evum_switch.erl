@@ -44,7 +44,6 @@
 -define(ETH_ALEN, 6).
 
 -record(state, {
-        uml_dir = ?UML_DIR,
         mac,
         ip,
         arp,

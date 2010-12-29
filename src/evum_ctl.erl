@@ -47,7 +47,6 @@
 -define(REQ_NEW_CONTROL, 0).
 
 -record(state, {
-    uml_dir = ?UML_DIR,
     pid,
     switch,
     path,
