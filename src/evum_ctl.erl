@@ -152,7 +152,7 @@ recv(Server, Switch, Socket) ->
             procket:close(Socket);
         {ok, <<?SWITCH_MAGIC:32/native, ?UML_VERSION:32/native, ?REQ_NEW_CONTROL:32/native, Sun/binary>>} ->
             error_logger:info_report([{connect_from, Sun}]),
-            Name = evum_data:name(Switch),
+            Name = evum_switch:name(Switch),
             case procket:sendto(Socket, Name, 0, <<>>) of
                 ok ->
 %                    data(Server, Socket, Buf),

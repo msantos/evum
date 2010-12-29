@@ -6,7 +6,7 @@
         evum,
         evum_mcons,
         evum_ctl,
-        evum_data,
+        evum_switch,
         mcons
             ]},
     {registered, []},
