@@ -141,7 +141,13 @@ handle_call(name, _From, #state{sun = Sun} = State) ->
 %% addresses.
 handle_call({net, Data}, _From, #state{s = Socket, addr = Addr} = State) ->
     Addr1 = ordsets:filter(
-        fun(Sun) -> ok == procket:sendto(Socket, Data, 0, Sun) end,
+        fun(Sun) ->
+                case procket:sendto(Socket, Data, 0, Sun) of
+                    ok -> true;
+                    {error,eagain} -> true;
+                    _ -> false
+                end
+        end,
         Addr
     ),
     {reply, ok, State#state{addr = Addr1}};
