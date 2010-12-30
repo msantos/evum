@@ -82,7 +82,7 @@ defaults() -> ?DEFAULT_BOOT_OPTIONS.
 
 start() ->
     Pid = self(),
-    start_link(Pid, defaults()).
+    start_link(Pid, []).
 start(Options) ->
     start_link(self(), Options).
 start(Pid, Options) when is_pid(Pid), is_list(Options) ->
@@ -116,7 +116,7 @@ puts(Ref, Data) when is_list(Data); is_binary(Data) ->
     gen_server:call(Ref, {send, Data}, infinity).
 
 start_link(Pid, Options) ->
-    {ok, Ref} = gen_server:start_link(?MODULE, [Pid, Options], []),
+    {ok, Ref} = gen_server:start_link(?MODULE, [Pid, Options ++ defaults()], []),
     boot(Ref, Options),
     {ok,Ref}.
 
