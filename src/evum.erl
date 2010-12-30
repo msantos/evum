@@ -54,6 +54,8 @@
 -define(DEFAULT_BOOT_OPTIONS, [
         net,
         {mem, 64},
+        {root, "/dev/root"},
+        {rootflags, "/"},
         {rootfstype, "hostfs"},
         {verbose, false},
         write,
@@ -82,7 +84,7 @@ defaults() -> ?DEFAULT_BOOT_OPTIONS.
 
 start() ->
     Pid = self(),
-    start_link(Pid, []).
+    start_link(Pid, defaults()).
 start(Options) ->
     start_link(self(), Options).
 start(Pid, Options) when is_pid(Pid), is_list(Options) ->
@@ -116,7 +118,7 @@ puts(Ref, Data) when is_list(Data); is_binary(Data) ->
     gen_server:call(Ref, {send, Data}, infinity).
 
 start_link(Pid, Options) ->
-    {ok, Ref} = gen_server:start_link(?MODULE, [Pid, Options ++ defaults()], []),
+    {ok, Ref} = gen_server:start_link(?MODULE, [Pid, Options], []),
     boot(Ref, Options),
     {ok,Ref}.
 
@@ -215,13 +217,18 @@ make_args(PL) ->
                 disk,
                 eth,
                 init,
+                initrd,
                 mem,
+                root,
+                rootflags,
                 rootfstype,
+                ubd,
                 umid,
                 uml_dir,
                 write
             ], proplists:lookup(Arg, PL) /= none ],
         " ").
+
 
 get_switch({disk, Dev, Image})              -> Dev ++ "=" ++ Image;
 get_switch({disk, Dev, Image, Cow})         -> Dev ++ "=" ++ Cow ++ "," ++ Image;
@@ -234,10 +241,17 @@ get_switch({eth, Dev, Path, MAC})           ->
 
 get_switch({init, Arg})                     -> "init=" ++ Arg;
 
+get_switch({initrd, Arg})                   -> "initrd=" ++ Arg;
+
 get_switch({mem, Arg}) when is_integer(Arg) -> "mem=" ++ integer_to_list(Arg) ++ "M";
 get_switch({mem, Arg}) when is_list(Arg)    -> "mem=" ++ Arg;
 
+get_switch({root, Arg})                     -> "root=" ++ Arg;
+get_switch({rootflags, Arg})                -> "rootflags=" ++ Arg;
 get_switch({rootfstype, Arg})               -> "rootfstype=" ++ Arg;
+
+get_switch({ubd, Arg})                      -> "ubda=" ++ Arg;
+get_switch({ubd, Dev, Arg})                 -> "ubd" ++ Dev ++ "=" ++ Arg;
 
 get_switch({umid, Arg})                     -> "umid=" ++ Arg;
 
