@@ -213,22 +213,10 @@ boot(Ref, _Options) ->
 %%--------------------------------------------------------------------
 make_args(PL) ->
     proplists:get_value(progname, PL, ?PROGNAME) ++ " " ++
-    string:join([ get_switch(proplists:lookup(Arg, PL)) || Arg <- [
-                disk,
-                eth,
-                init,
-                initrd,
-                mem,
-                root,
-                rootflags,
-                rootfstype,
-                ubd,
-                umid,
-                uml_dir,
-                write
-            ], proplists:lookup(Arg, PL) /= none ],
-        " ").
+    string:join([ get_switch(N) || N <- PL ], " ").
 
+get_switch({con, Arg})                      -> "con=" ++ Arg;
+get_switch({con, Dev, Arg})                 -> "con" ++ integer_to_list(Dev) ++ "=" ++ Arg;
 
 get_switch({disk, Dev, Image})              -> Dev ++ "=" ++ Image;
 get_switch({disk, Dev, Image, Cow})         -> Dev ++ "=" ++ Cow ++ "," ++ Image;
@@ -246,9 +234,15 @@ get_switch({initrd, Arg})                   -> "initrd=" ++ Arg;
 get_switch({mem, Arg}) when is_integer(Arg) -> "mem=" ++ integer_to_list(Arg) ++ "M";
 get_switch({mem, Arg}) when is_list(Arg)    -> "mem=" ++ Arg;
 
+get_switch(net)                             -> "";
+get_switch({net, _})                        -> "";
+
 get_switch({root, Arg})                     -> "root=" ++ Arg;
 get_switch({rootflags, Arg})                -> "rootflags=" ++ Arg;
 get_switch({rootfstype, Arg})               -> "rootfstype=" ++ Arg;
+
+get_switch({ssl, Arg})                      -> "ssl=" ++ Arg;
+get_switch({ssl, Dev, Arg})                 -> "ssl" ++ integer_to_list(Dev) ++ "=" ++ Arg;
 
 get_switch({ubd, Arg})                      -> "ubda=" ++ Arg;
 get_switch({ubd, Dev, Arg})                 -> "ubd" ++ Dev ++ "=" ++ Arg;
@@ -260,7 +254,11 @@ get_switch({uml_dir, Arg})                  -> "uml_dir=" ++ Arg;
 get_switch({verbose, true})                 -> "";
 get_switch({verbose, false})                -> "quiet";
 
-get_switch({write, true})                   -> "rw".
+get_switch({write, true})                   -> "rw";
+
+get_switch(Arg) ->
+    error_logger:warning_report([{ignored, Arg}]),
+    "".
 
 
 umid(Pid) when is_pid(Pid) ->
