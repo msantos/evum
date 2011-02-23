@@ -45,6 +45,7 @@
 
 -record(state, {
         addr,
+        port,
         ip,
         arp,
         ifindex,
@@ -65,8 +66,6 @@ stop(Ref) ->
 name(Ref) ->
     gen_server:call(Ref, name).
 
-data(Ref, {net, Data}) ->
-    gen_server:call(Ref, {net, Data});
 data(Ref, {unix, {Sun, Data}}) ->
     gen_server:call(Ref, {unix, Sun, Data}).
 
@@ -102,56 +101,31 @@ init([Pid]) ->
     [If] = packet:default_interface(),
     Ifindex = packet:ifindex(IP, If),
 
-    State = #state{
+    Self = self(),
+
+    % Monitor the network for IP events
+    PIP = open_port({fd, IP, IP}, [stream, binary]),
+
+    % Monitor the network for ARP events
+    PARP = open_port({fd, ARP, ARP}, [stream, binary]),
+
+    % Monitor the Unix socket for events
+    spawn_link(fun() -> unix(Self, Socket) end),
+
+    {ok, #state{
             addr = ordsets:new(),
+            port = {PIP, PARP},
             ip = IP,
             arp = ARP,
             ifindex = Ifindex,
             s = Socket,
             sun = Sun,
             pid = Pid
-        },
-
-    Self = self(),
-
-    % Monitor the network for IP events
-    spawn_link(fun() -> net(Self, IP) end),
-
-    % Monitor the network for ARP events
-    spawn_link(fun() -> net(Self, ARP) end),
-
-    % Monitor the Unix socket for events
-    spawn_link(fun() -> unix(Self, Socket) end),
-
-    {ok, State}.
+        }}.
 
 
 handle_call(name, _From, #state{sun = Sun} = State) ->
     {reply, Sun, State};
-
-%% Pretend we're hubbed
-%% 
-%% Linux doesn't seem to allow sending fake ARP addresses. The ARP packets
-%% can be seen by sniffing the interface but aren't propagated to
-%% the network. There may be some settings to influence this behaviour,
-%% e.g., /proc/sys/net/ipv4/conf/all/arp_filter = 1
-%%
-%% For now, use the host MAC address and send the replies to all running
-%% VM's. If the VM is not responding, remove it from the list of VM
-%% addresses.
-handle_call({net, Data}, _From, #state{s = Socket, addr = Addr} = State) ->
-    Addr1 = ordsets:filter(
-        fun(Sun) ->
-                case procket:sendto(Socket, Data, 0, Sun) of
-                    ok -> true;
-                    {error,eagain} -> true;
-                    _ -> false
-                end
-        end,
-        Addr
-    ),
-    {reply, ok, State#state{addr = Addr1}};
-
 handle_call({unix, Sun, Data}, _From, #state{
         s = Unix,
         ip = IP,
@@ -184,8 +158,39 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 %%--------------------------------------------------------------------
-%%% Internal functions
+%%% Port communication
+%%%
+%%% Poll the socket for events
+%%%
 %%--------------------------------------------------------------------
+
+%% Pretend we're hubbed
+%%
+%% Linux doesn't seem to allow sending fake ARP addresses. The ARP packets
+%% can be seen by sniffing the interface but aren't propagated to
+%% the network. There may be some settings to influence this behaviour,
+%% e.g., /proc/sys/net/ipv4/conf/all/arp_filter = 1
+%%
+%% For now, use the host MAC address and send the replies to all running
+%% VM's. If the VM is not responding, remove it from the list of VM
+%% addresses.
+handle_info({Port, {data, Data}}, #state{
+        port = {PIP, PARP},
+        s = Socket,
+        addr = Addr
+    } = State) when Port == PIP; Port == PARP ->
+    Addr1 = ordsets:filter(
+        fun(Sun) ->
+                case procket:sendto(Socket, Data, 0, Sun) of
+                    ok -> true;
+                    {error,eagain} -> true;
+                    _ -> false
+                end
+        end,
+        Addr
+    ),
+    {noreply, State#state{addr = Addr1}};
+
 handle_info(Info, State) ->
     error_logger:error_report([{wtf, Info}]),
     {noreply, State}.
@@ -193,20 +198,6 @@ handle_info(Info, State) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-net(Server, Socket) ->
-    case procket:recvfrom(Socket, 65535) of
-        {error, eagain} ->
-            timer:sleep(10),
-            net(Server, Socket);
-        {ok, Buf} ->
-            data(Server, {net, Buf}),
-            net(Server, Socket);
-        Error ->
-            error_logger:error_report(Error),
-            procket:close(Socket)
-    end.
-
-
 unix(Server, Socket) ->
     case procket:recvfrom(Socket, 65535, 0, 110) of
         {error, eagain} ->
