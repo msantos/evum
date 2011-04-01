@@ -7,26 +7,66 @@ disk), all I/O with the outside world is sent as messages through the
 Erlang VM (currently working: network, system console).
 
 
-# TODO
+# REQUIREMENTS
 
-Create a Linux system image rather than relying on the host filesystem.
-
-Like an Erlang process the state of the Linux VM will be immutable. While
-it may store data on its filesystem, the data will be wiped after the
-VM reboots.  System binaries will not be writable. To store persistent
-data, the Linux VM will save its state by messaging some other Erlang
-process, maybe by writing to a FUSE filesystem.
-
-The FUSE filesystem should be user definable. By default, it should act
-as a passthrough: read() -> file:read/2, write() -> file:write/2, etc.
-A distributed backend would allow failover of VM's.
-
-Virtualization is done using User Mode Linux, but probably Linux
-Containers (lxc) will also be supported in the future, and maybe others
-using Erlang bindings to libvirt.
+    sudo apt-get install user-mode-linux
 
 
 # EXAMPLE
+
+## Quick Start
+
+* Download and create a buildroot instance
+
+    1> {ok, Ref} = evm:create([
+            {label, test1},     % Label identifying this vm
+            {dist, buildroot}   % Linux distribution image, defined in priv/evm.cfg
+            ]).
+    {ok,<0.60.0>}
+
+    2> flush(). % See the boot messages
+
+    3> evum:send(Ref, "hostname").
+    4> flush().
+    Shell got <<"evm">>
+    ok
+
+
+
+* Download and create an OpenWRT instance with network access
+
+Set the network configuration for your VM in priv/evm.cfg:
+
+    {network, [
+        {home, [
+            {base_ip, "192.168.213."},
+                {first_ip, 92},
+                {netmask, "255.255.255.0"},
+                {gw, "192.168.213.1"}
+        ]}
+        ]}.
+
+Create the OpenWRT VM:
+
+    1> {ok, Ref} = evm:create([
+            {label, test1},     % Label for this vm
+            {dist, openwrt},    % Defined in priv/evm.cfg
+            {net, coffeeshop}   % Set up networking: see priv/evm.cfg
+            ]).
+    {ok,<0.60.0>}
+
+From another host (NOTE: can't be the system running the evum), telnet
+to the IP address of the OpenWRT VM:
+
+    telnet 192.168.213.92 # or: nc -t 192.168.213.92 22
+
+Run some commands in the VM. All the network data is proxied through
+Erlang:
+
+    opkg update # may need to adjust /etc/resolv.conf first
+    opkg install erlang
+    erl
+
 
 ## Using the Host OS
 
@@ -108,4 +148,26 @@ From another host:
     mode            : skas
     host            : Linux rst 2.6.32-26-generic #48-Ubuntu SMP Wed Nov 24 09:00:03 UTC 2010 i686
     bogomips        : 1468.00
+
+
+# SCREENSHOT: Erlang in Erlang!
+
+    root@OpenWrt:/tmp# opkg install erlang
+    Installing erlang (R13A-1) to root...
+    Downloading http://downloads.openwrt.org/backfire/10.03/x86/packages/erlang_R13A-1_x86.ipk.
+    Installing libncurses (5.7-2) to root...
+    Downloading http://downloads.openwrt.org/backfire/10.03/x86/packages/libncurses_5.7-2_x86.ipk.
+    Installing librt (0.9.30.1-42) to root...
+    Downloading http://downloads.openwrt.org/backfire/10.03/x86/packages/librt_0.9.30.1-42_x86.ipk.
+    Configuring libncurses.
+    Configuring librt.
+    Configuring erlang.
+    root@OpenWrt:/tmp# erl
+    Erlang R13A (erts-5.7) [source] [rq:1] [kernel-poll:false]
+    
+    Eshell V5.7  (abort with ^G)
+    1> spawn(io, format, ["Erlang process spawned in an Erlang VM in a Linux VM in an Erlang process in an Erlang VM~n"]).
+    Erlang process spawned in an Erlang VM in a Linux VM in an Erlang process in an Erlang VM
+    <0.35.0>
+    2>
 
