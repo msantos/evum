@@ -12,6 +12,13 @@ Erlang VM (currently working: network, system console).
     sudo apt-get install user-mode-linux
 
 
+# TODO
+
+* virtual machines should be monitored and re-started by supervisors
+
+* persistent state mounted as filesystem
+
+
 # EXAMPLE
 
 ## Quick Start
