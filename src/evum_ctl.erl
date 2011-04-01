@@ -115,7 +115,11 @@ code_change(_OldVsn, State, _Extra) ->
 
 
 %%--------------------------------------------------------------------
-%% Stream data from the ctl socket
+%%%
+%%% Port Communication
+%%%
+%%% Stream data from the ctl socket
+%%%
 %%--------------------------------------------------------------------
 handle_info(Info, State) ->
     error_logger:error_report([{wtf, Info}]),
@@ -154,7 +158,6 @@ recv(Server, Switch, Socket) ->
             Name = evum_switch:name(Switch),
             case procket:sendto(Socket, Name, 0, <<>>) of
                 ok ->
-%                    data(Server, Socket, Buf),
                     recv(Server, Switch, Socket);
                 _ ->
                     procket:close(Socket)
