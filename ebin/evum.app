@@ -7,7 +7,9 @@
         evum_mcons,
         evum_ctl,
         evum_switch,
-        mcons
+        mcons,
+        evm,
+        evm_cfg
             ]},
     {registered, []},
     {applications, [
