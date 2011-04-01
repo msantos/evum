@@ -32,7 +32,7 @@
 
 -export([
         args/1,
-        start/3
+        create/1
     ]).
 -export([
         check_image/1,
@@ -40,14 +40,21 @@
         path/1
     ]).
 
+-define(LABEL, "default").
+-define(DIST, buildroot).
+
 
 args(Dist) ->
     evum:make_args(evm_cfg:dist(args, Dist)).
 
-start(Label, Dist, Location) when is_list(Label), is_atom(Dist), is_atom(Location) ->
+create(Arg) when is_list(Arg) ->
+    Label = proplists:get_value(label, Arg, ?LABEL),
+    Dist = proplists:get_value(dist, Arg, ?DIST),
+    Location = proplists:get_value(location, Arg),
+
     Image = check_image(Dist),
     start_evum(),
-    {ok,Ref} = start_vm(Label, Image, Dist),
+    {ok,Ref} = start_vm(atom_to_list(Label), Image, Dist),
 
     wait_prompt(),
 
@@ -85,6 +92,8 @@ start_vm(Label, Image, Dist) ->
     {ok,Ref} = evum:start(Arg ++ [{ubd, Cow}]),
     {ok,Ref}.
 
+start_net(_Ref, undefined) ->
+    ok;
 start_net(Ref, Location) ->
     Base = evm_cfg:net(base_ip, Location),
     First = evm_cfg:net(first_ip, Location),

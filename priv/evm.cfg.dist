@@ -1,0 +1,42 @@
+{network, [
+    {home, [
+        {base_ip, "192.168.213."},
+        {first_ip, 92},
+        {netmask, "255.255.255.0"},
+        {gw, "192.168.213.1"}
+    ]},
+    {coffeeshop, [
+        {base_ip, "192.168.101."},
+        {first_ip, 139},
+        {netmask, "255.255.255.0"},
+        {gw, "192.168.101.1"}
+    ]},
+    {library, [
+        {base_ip, "10.200.22."},
+        {first_ip, 121},
+        {netmask, "255.255.248.0"},
+        {gw, "10.200.16.1"},
+        {ping, "10.200.22.24"}
+    ]}
+    ]}.
+
+{image, [
+    {openwrt, [
+        {file, "openwrt-x86-ext2.fs"},
+        {uri, "http://downloads.openwrt.org/backfire/10.03/x86/openwrt-x86-ext2.fs"},
+        {md5, "56d54230d71c6886428651bee25cfc0a"},
+        {args, [
+            {net, true},
+            {con, "null"},
+            {ssl, "null"},
+            {ssl, 0, "fd:0,fd:1"},
+            {init, "/etc/preinit"}
+            ]}
+    ]},
+    {buildroot, [
+        {file, "buildroot-x86-ext2.fs"},
+        {uri, "https://github.com/downloads/msantos/evum/buildroot-x86-ext2.fs.bz2"},
+        {md5, "9e3ea9e85f5a94e85dd57c2750eeadfa"},
+        {args, [{net,true}]}
+    ]}
+    ]}.
