@@ -4,6 +4,8 @@
     {vsn, "0.01"},
     {modules, [
         evum,
+        evum_srv,
+        evum_sup,
         evum_mcons,
         evum_ctl,
         evum_switch,

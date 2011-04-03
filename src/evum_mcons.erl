@@ -102,8 +102,10 @@ help(Socket) ->
 send(Socket, Command) when is_list(Command) ->
     send(Socket, list_to_binary(Command));
 send(#socket{} = Socket, Command) when is_binary(Command) ->
-    ok = write(Socket, cmd(Command)),
-    recv(Socket).
+    case  write(Socket, cmd(Command)) of
+        ok -> recv(Socket);
+        Error -> Error
+    end.
 
 
 recv(Socket) ->

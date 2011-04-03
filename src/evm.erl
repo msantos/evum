@@ -45,7 +45,7 @@
 
 
 args(Dist) ->
-    evum:make_args(evm_cfg:dist(args, Dist)).
+    evum_srv:make_args(evm_cfg:dist(args, Dist)).
 
 create(Arg) when is_list(Arg) ->
     Label = proplists:get_value(label, Arg, ?LABEL),
@@ -58,6 +58,7 @@ create(Arg) when is_list(Arg) ->
 
     wait_prompt(),
 
+    mount_proc(Ref),
     start_net(Ref, Location),
     {ok, Ref}.
 
@@ -78,10 +79,13 @@ wait_prompt() ->
     end.
 
 start_evum() ->
-    case lists:member(evum_ctl, erlang:registered()) of
-        true ->
+    evum_sup:start_link(),
+    Path = evum_ctl:socket(),
+    case file:read_file_info(Path) of
+        {ok, _} ->
             ok;
-        false ->
+        {error, enoent} ->
+            error_logger:info_report([{starting, switch}]),
             {ok,Switch} = evum_switch:start(),
             evum_ctl:start(Switch)
     end.
@@ -89,8 +93,12 @@ start_evum() ->
 start_vm(Label, Image, Dist) ->
     Arg = evm_cfg:dist(args, Dist),
     Cow = Image ++ ".cow-" ++ Label ++ "," ++ Image,
-    {ok,Ref} = evum:start(Arg ++ [{ubd, Cow}]),
+    Pid = self(),
+    {ok,Ref} = supervisor:start_child(evum_sup, [Pid, Arg ++ [{ubd, Cow}]]),
     {ok,Ref}.
+
+mount_proc(Ref) ->
+    evum:send(Ref, <<"mount -t proc /proc /proc">>).
 
 start_net(_Ref, undefined) ->
     ok;

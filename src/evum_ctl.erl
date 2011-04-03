@@ -34,7 +34,7 @@
 -include("procket.hrl").
 -include("evum.hrl").
 
--export([start/1, start/2, stop/1]).
+-export([start/1, start/2, stop/1, socket/0]).
 -export([data/3]).
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -69,9 +69,12 @@ data(Ref, Socket, Data) ->
 start_link(Pid, Switch) when is_pid(Pid), is_pid(Switch) ->
     gen_server:start_link(?MODULE, [Pid, Switch], []).
 
+socket() ->
+    ?UML_DIR ++ "/evum.ctl".
+
 init([Pid, Switch]) ->
     process_flag(trap_exit, true),
-    Path = ?UML_DIR ++ "/evum.ctl",
+    Path = socket(),
 
     {ok, Socket} = procket:socket(?PF_LOCAL, ?SOCK_STREAM, 0),
     ok = procket:setsockopt(Socket, ?SOL_SOCKET, ?SO_REUSEADDR, <<1:32/native>>),
