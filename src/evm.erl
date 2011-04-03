@@ -54,7 +54,7 @@ create(Arg) when is_list(Arg) ->
 
     Image = check_image(Dist),
     start_evum(),
-    {ok,Ref} = start_vm(atom_to_list(Label), Image, Dist),
+    {ok,Ref} = start_vm(Label, Image, Dist),
 
     wait_prompt(),
 
@@ -92,10 +92,9 @@ start_evum() ->
 
 start_vm(Label, Image, Dist) ->
     Arg = evm_cfg:dist(args, Dist),
-    Cow = Image ++ ".cow-" ++ Label ++ "," ++ Image,
+    Cow = Image ++ ".cow-" ++ atom_to_list(Label) ++ "," ++ Image,
     Pid = self(),
-    {ok,Ref} = supervisor:start_child(evum_sup, [Pid, Arg ++ [{ubd, Cow}]]),
-    {ok,Ref}.
+    supervisor:start_child(evum_sup, [Pid, Label, Arg ++ [{ubd, Cow}]]).
 
 mount_proc(Ref) ->
     evum:send(Ref, <<"mount -t proc /proc /proc">>).

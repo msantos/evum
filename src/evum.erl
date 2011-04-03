@@ -33,7 +33,7 @@
 -include_lib("kernel/include/inet.hrl").
 
 -export([ping/2, sniff/1, ifconfig/2]).
--export([start/0, start/1, start/2, stop/1, start_link/2]).
+-export([start/0, start/1, start/2, stop/1, start_link/2, start_link/3]).
 -export([send/2, send/3, puts/2, system/2, reboot/1]).
 -export([defaults/0]).
 
@@ -49,22 +49,22 @@
     ]).
 
 
-ifconfig(Ref, {IP, Netmask, Default}) when is_pid(Ref) ->
+ifconfig(Ref, {IP, Netmask, Default}) ->
     send(Ref, "ifconfig eth0 " ++ IP ++ " netmask " ++ Netmask),
     send(Ref, "route add default gw " ++ Default).
 
 
-ping(Ref, Hostname) when is_pid(Ref), is_list(Hostname) ->
+ping(Ref, Hostname) when is_list(Hostname) ->
     Addr = case inet_res:gethostbyname(Hostname) of
         {ok, #hostent{h_addr_list = [IP|_IPs]}} -> IP;
         _ -> throw(badarg)
     end,
     ping(Ref, Addr);
-ping(Ref, {A,B,C,D} = IP) when is_pid(Ref), is_integer(A), is_integer(B), is_integer(C), is_integer(D) ->
+ping(Ref, {A,B,C,D} = IP) when is_integer(A), is_integer(B), is_integer(C), is_integer(D) ->
     send(Ref, "ping -w 5 -c 1 " ++ inet_parse:ntoa(IP)).
 
 
-sniff(Ref) when is_pid(Ref) ->
+sniff(Ref) ->
     send(Ref, "tcpdump -s 0 -w /tmp/sniff.out -i eth0 > /dev/null 2>&1 &").
 
 
@@ -80,22 +80,24 @@ start(Pid, Options) ->
     start_link(Pid, Options).
 
 start_link(Pid, Options) when is_pid(Pid), is_list(Options) ->
-    evum_srv:start_link(Pid, Options).
+    evum_srv:start_link([Pid, Options]).
+start_link(Pid, Label, Options) when is_pid(Pid), is_list(Options) ->
+    evum_srv:start_link([Pid, Label, Options]).
 
 stop(Ref) ->
     gen_server:call(Ref, stop).
 
-reboot(Ref) when is_pid(Ref) ->
+reboot(Ref) ->
     system(Ref, <<"reboot">>).
 
-system(Ref, Command) when is_pid(Ref), is_list(Command) ->
+system(Ref, Command) when is_list(Command) ->
     system(Ref, list_to_binary(Command));
-system(Ref, Command) when is_pid(Ref), is_binary(Command) ->
+system(Ref, Command) when is_binary(Command) ->
     gen_server:call(Ref, {system, Command}, infinity).
 
-send(Ref, Data) when is_pid(Ref), ( is_list(Data) orelse is_binary(Data) ) ->
+send(Ref, Data) ->
     send(Ref, Data, infinity).
-send(Ref, Data, Timeout) when is_pid(Ref), ( is_list(Data) orelse is_binary(Data) ) ->
+send(Ref, Data, Timeout) when ( is_list(Data) orelse is_binary(Data) ) ->
     case gen_server:call(Ref, {send, list_to_binary([Data, "\n"])}, infinity) of
         ok ->
             receive
@@ -106,5 +108,5 @@ send(Ref, Data, Timeout) when is_pid(Ref), ( is_list(Data) orelse is_binary(Data
         Error -> Error
     end.
 
-puts(Ref, Data) when is_pid(Ref), ( is_list(Data) orelse is_binary(Data) ) ->
+puts(Ref, Data) when ( is_list(Data) orelse is_binary(Data) ) ->
     gen_server:call(Ref, {send, Data}, infinity).

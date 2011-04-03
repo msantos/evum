@@ -36,7 +36,7 @@
 -define(PROGNAME, "priv/linux").
 
 -export([start/2, stop/1]).
--export([start_link/2]).
+-export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
             terminate/2, code_change/3]).
 
@@ -49,14 +49,16 @@
 
 
 start(Pid, Options) when is_pid(Pid), is_list(Options) ->
-    start_link(Pid, Options).
+    start_link([Pid, Options]).
 
-stop(Ref) when is_pid(Ref) ->
+stop(Ref) ->
     gen_server:call(Ref, stop).
 
 
-start_link(Pid, Options) ->
-    gen_server:start_link(?MODULE, [Pid, Options], []).
+start_link([Pid, Options]) ->
+    gen_server:start_link(?MODULE, [Pid, Options], []);
+start_link([Pid, Label, Options]) ->
+    gen_server:start_link({local, Label}, ?MODULE, [Pid, Options], []).
 
 
 init([Pid, Options]) ->
