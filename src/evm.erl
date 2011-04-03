@@ -42,6 +42,7 @@
 
 -define(LABEL, "default").
 -define(DIST, buildroot).
+-define(PROMPT_TIMEOUT, 10000).
 
 
 args(Dist) ->
@@ -51,30 +52,33 @@ create(Arg) when is_list(Arg) ->
     Label = proplists:get_value(label, Arg, ?LABEL),
     Dist = proplists:get_value(dist, Arg, ?DIST),
     Location = proplists:get_value(location, Arg),
+    Timeout = proplists:get_value(timeout, Arg, ?PROMPT_TIMEOUT),
+    Verbose = proplists:get_value(verbose, Arg, false),
 
     Image = check_image(Dist),
     start_evum(),
     {ok,Ref} = start_vm(Label, Image, Dist),
 
-    wait_prompt(),
+    wait_prompt(Timeout, Verbose),
 
     mount_proc(Ref),
     start_net(Ref, Location),
     {ok, Ref}.
 
-wait_prompt() ->
+wait_prompt(Timeout, Verbose) ->
     receive
         % buildroot
         <<"#", _/binary>> -> ok;
-        % OpenWRT
-        <<"root@", _/binary>> ->
-            error_logger:info_report([{prompt, openwrt}]),
-            ok;
-        _ -> wait_prompt()
+        Line ->
+            case Verbose of
+                true -> error_logger:info_report([{boot, Line}]);
+                false -> ok
+            end,
+            wait_prompt(Timeout, Verbose)
     after
         % Random Linux system image
-        10000 ->
-            error_logger:info_report([{prompt, timeout}]),
+        Timeout ->
+            error_logger:info_report([{prompt, timeout}, {timeout, Timeout}]),
             ok
     end.
 
