@@ -33,7 +33,7 @@ Erlang VM (currently working: network, system console).
 
     2> flush(). % See the boot messages
 
-    3> evum:send(Ref, "hostname").
+    3> evum:send(test1, "hostname").
     4> flush().
     Shell got <<"evm">>
     ok
@@ -56,14 +56,14 @@ Set the network configuration for your VM in priv/evm.cfg:
 Create the OpenWRT VM:
 
     1> {ok, Ref} = evm:create([
-            {label, test1},     % Label for this vm
+            {label, test2},     % Label for this vm
             {dist, openwrt},    % Defined in priv/evm.cfg
             {net, coffeeshop}   % Set up networking: see priv/evm.cfg
             ]).
     {ok,<0.60.0>}
 
-From another host (NOTE: can't be the system running the evum), telnet
-to the IP address of the OpenWRT VM:
+From another host (NOTE: will not work from the system running evum),
+telnet to the IP address of the OpenWRT VM:
 
     telnet 192.168.213.92 # or: nc -t 192.168.213.92 22
 
