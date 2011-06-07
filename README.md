@@ -14,8 +14,6 @@ Erlang VM (currently working: network, system console).
 
 # TODO
 
-* virtual machines should be monitored and re-started by supervisors
-
 * persistent state mounted as filesystem
 
 
@@ -25,18 +23,18 @@ Erlang VM (currently working: network, system console).
 
 * Download and create a buildroot instance
 
-    1> {ok, Ref} = evm:create([
-            {label, test1},     % Label identifying this vm
-            {dist, buildroot}   % Linux distribution image, defined in priv/evm.cfg
-            ]).
-    {ok,<0.60.0>}
-
-    2> flush(). % See the boot messages
-
-    3> evum:send(test1, "hostname").
-    4> flush().
-    Shell got <<"evm">>
-    ok
+        1> {ok, Ref} = evm:create([
+                {label, test1},     % Label identifying this vm
+                {dist, buildroot}   % Linux distribution image, defined in priv/evm.cfg
+                ]).
+        {ok,<0.60.0>}
+    
+        2> flush(). % See the boot messages
+    
+        3> evum:send(test1, "hostname").
+        4> flush().
+        Shell got <<"evm">>
+        ok
 
 
 
