@@ -210,5 +210,3 @@ unix(Server, Socket) ->
             error_logger:error_report(Error),
             procket:close(Socket)
     end.
-
-

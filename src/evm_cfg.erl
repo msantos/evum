@@ -71,4 +71,3 @@ net(Key, Location) ->
 
 dist(Key, Dist) ->
     val(image, {Key, Dist}).
-

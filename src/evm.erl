@@ -177,4 +177,3 @@ path(File) ->
 
     ok = filelib:ensure_dir(Path),
     Path.
-

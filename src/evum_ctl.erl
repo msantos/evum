@@ -180,5 +180,3 @@ recv(Server, Switch, Socket) ->
             error_logger:info_report([{error, Error}]),
             procket:close(Socket)
     end.
-
-

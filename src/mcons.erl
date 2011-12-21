@@ -92,5 +92,3 @@ log(Socket, Config) ->
     evum_mcons:send(Socket, <<"log ", Config>>).
 proc(Socket, Config) ->
     evum_mcons:send(Socket, <<"proc ">>, Config).
-
-

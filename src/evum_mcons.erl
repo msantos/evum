@@ -163,5 +163,3 @@ cmd(Cmd) when byte_size(Cmd) < 4+4+4+?MCONSOLE_MAX_DATA ->
 response(<<Err:4/unsigned-integer-unit:8, More:4/unsigned-integer-unit:8,
     Len:4/unsigned-integer-unit:8, Data/bytes>>) ->
     {Err, More, Len, Data}.
-
-
