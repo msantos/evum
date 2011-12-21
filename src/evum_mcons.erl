@@ -85,18 +85,18 @@ help(Socket) ->
     io:format("~s", [Output]).
 
 
-% version - Get kernel version 
-% help - Print this message 
-% halt - Halt UML 
-% reboot - Reboot UML 
-% config <dev>=<config> - Add a new device to UML;  
-% same syntax as command line 
-% config <dev> - Query the configuration of a device 
-% remove <dev> - Remove a device from UML 
-% sysrq <letter> - Performs the SysRq action controlled by the letter 
-% cad - invoke the Ctrl-Alt-Del handler 
-% stop - pause the UML; it will do nothing until it receives a 'go' 
-% go - continue the UML after a 'stop' 
+% version - Get kernel version
+% help - Print this message
+% halt - Halt UML
+% reboot - Reboot UML
+% config <dev>=<config> - Add a new device to UML;
+% same syntax as command line
+% config <dev> - Query the configuration of a device
+% remove <dev> - Remove a device from UML
+% sysrq <letter> - Performs the SysRq action controlled by the letter
+% cad - invoke the Ctrl-Alt-Del handler
+% stop - pause the UML; it will do nothing until it receives a 'go'
+% go - continue the UML after a 'stop'
 % log <string> - make UML enter <string> into the kernel log
 % proc <file> - returns the contents of the UML's /proc/<file>
 send(Socket, Command) when is_list(Command) ->
