@@ -84,28 +84,28 @@ Erlang:
     {ok,<0.58.0>}
     
     % Start a Linux VM
-    3> {ok,R} = evum:start().
+    3> {ok,R1} = evum:start().
     {ok,<0.61.0>}
     
     % And another VM ...
-    3> {ok,R1} = evum:start().
+    3> {ok,R2} = evum:start().
     4ok,<0.64.0>}
     
     % One more VM ...
-    5> {ok,R2} = evum:start().
+    5> {ok,R3} = evum:start().
     {ok,<0.67.0>}
     
     % See the Linux boot messages
     6> flush().
     
     % Set up the network interfaces
-    7> evum:ifconfig(R, {"192.168.213.92","255.255.255.0","192.168.213.1"}).
+    7> evum:ifconfig(R1, {"192.168.213.92","255.255.255.0","192.168.213.1"}).
     
-    8> evum:ifconfig(R, {"192.168.213.93","255.255.255.0","192.168.213.1"}).
+    8> evum:ifconfig(R2, {"192.168.213.93","255.255.255.0","192.168.213.1"}).
     
-    9> evum:ifconfig(R, {"192.168.213.94","255.255.255.0","192.168.213.1"}).
+    9> evum:ifconfig(R3, {"192.168.213.94","255.255.255.0","192.168.213.1"}).
     
-    10> evum:send(R, "ifconfig -a").
+    10> evum:send(R1, "ifconfig -a").
     <<"root@(none):/# ifconfig -a">>
     
     11> flush().
@@ -127,9 +127,9 @@ Erlang:
     Shell got <<>>
     
     % Ping something, so our fake switch can learn of the VM's prescence
-    12> evum:ping(R, {192,168,213,7}).
-    13> evum:ping(R1, {192,168,213,7}).
-    14> evum:ping(R2, {192,168,213,7}).
+    12> evum:ping(R1, {192,168,213,7}).
+    13> evum:ping(R2, {192,168,213,7}).
+    14> evum:ping(R3, {192,168,213,7}).
     
     8> flush().
     Shell got <<"PING 192.168.213.7 (192.168.213.7) 56(84) bytes of data.">>
