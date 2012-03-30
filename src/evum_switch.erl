@@ -1,4 +1,4 @@
-%% Copyright (c) 2010, Michael Santos <michael.santos@gmail.com>
+%% Copyright (c) 2010-2012, Michael Santos <michael.santos@gmail.com>
 %% All rights reserved.
 %%
 %% Redistribution and use in source and binary forms, with or without
@@ -31,8 +31,8 @@
 -module(evum_switch).
 -behaviour(gen_server).
 
--include("pkt.hrl").
--include("procket.hrl").
+-include_lib("pkt/include/pkt.hrl").
+-include_lib("procket/include/procket.hrl").
 -include("evum.hrl").
 
 -export([start/0, start/1, stop/1]).
